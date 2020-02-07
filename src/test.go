@@ -1,11 +1,11 @@
 package main
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	//"bufio"
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"time"
 
@@ -14,6 +14,7 @@ import (
 	// "regexp"
 	// "strconv"
 	// "strings"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -43,11 +44,29 @@ func main() {
 	if err != nil {
 		log.Fatal("Ping", err)
 	}
+	var result []string
+	result, err = client.ListDatabaseNames(ctx, bson.D{})
+	fmt.Println(result)
 
-	r, _, err := net.LookupSRV("mongodb", "tcp", "ts-cluster-ci22a.mongodb.net")
+	result, err = client.Database("testdb").ListCollectionNames(ctx, bson.D{})
+	fmt.Println(result)
+
+	// var sr bson.M
+	var sr2 struct {
+		ID     primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+		Amount int64              `bson:"amounta,omitempty"`
+	}
+
+	sr2.Amount = 1
+
+	rr, _ := client.Database("testdb").Collection("pbla").InsertOne(context.Background(), sr2)
+	fmt.Println(rr)
+	err = client.Disconnect(context.TODO())
+
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Connection to MongoDB closed.")
 
-	fmt.Println("bye", r)
+	fmt.Println("bye")
 }
