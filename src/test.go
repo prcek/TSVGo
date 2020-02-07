@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	// "regexp"
 	// "strconv"
@@ -16,8 +19,17 @@ import (
 )
 
 func main() {
-	fmt.Println("hello")
-	clientOptions := options.Client().ApplyURI("mongodb+srv://xxxt:xxx@cluster0-tlc14.mongodb.net/test")
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file")
+	}
+	mongoURI, mongoURIp := os.LookupEnv("MONGODB_URI")
+	if !mongoURIp {
+		log.Fatal("env MONGODB_URI missing")
+	}
+
+	clientOptions := options.Client().ApplyURI(mongoURI)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
