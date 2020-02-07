@@ -1,6 +1,8 @@
 package main
 
 import (
+	"store"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	//"bufio"
 	"context"
@@ -14,10 +16,23 @@ import (
 	// "regexp"
 	// "strconv"
 	// "strings"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func testEv(cli *mongo.Client) {
+	store.InitCollections(cli.Database("tsv"))
+	ID, err := primitive.ObjectIDFromHex("5d964fea2bfbc5000ff2a19a")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ev := store.GetEvent(ID)
+	fmt.Println("EV:", ev)
+	order := store.GetOrderForEvent(ID)
+	fmt.Println("OR:", order)
+}
 
 func main() {
 
@@ -45,22 +60,24 @@ func main() {
 		log.Fatal("Ping", err)
 	}
 	var result []string
-	result, err = client.ListDatabaseNames(ctx, bson.D{})
-	fmt.Println(result)
 
 	result, err = client.Database("testdb").ListCollectionNames(ctx, bson.D{})
 	fmt.Println(result)
 
 	// var sr bson.M
-	var sr2 struct {
-		ID     primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-		Amount int64              `bson:"amounta,omitempty"`
-	}
+	/*
+		var sr2 struct {
+			ID     primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+			Amount int64              `bson:"amounta,omitempty"`
+		}
 
-	sr2.Amount = 1
+		sr2.Amount = 1
 
-	rr, _ := client.Database("testdb").Collection("pbla").InsertOne(context.Background(), sr2)
-	fmt.Println(rr)
+		rr, _ := client.Database("testdb").Collection("pbla").InsertOne(context.Background(), sr2)
+		fmt.Println(rr)
+	*/
+	testEv(client)
+
 	err = client.Disconnect(context.TODO())
 
 	if err != nil {
