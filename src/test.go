@@ -32,6 +32,9 @@ func testEv(cli *mongo.Client) {
 	fmt.Println("EV:", ev)
 	order := store.GetOrderForEvent(ID)
 	fmt.Println("OR:", order)
+
+	pays := store.ReadPaysFromCSV("input.csv")
+	fmt.Println(pays)
 }
 
 func main() {
