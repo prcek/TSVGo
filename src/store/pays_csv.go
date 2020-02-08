@@ -98,6 +98,8 @@ func str2time(s string) time.Time {
 	return t
 }
 
+var allpays []PaysCSVRecord
+
 // ReadPaysFromCSV ...
 func ReadPaysFromCSV(filename string) []PaysCSVRecord {
 	csvfile, err := os.Open(filename)
@@ -123,5 +125,19 @@ func ReadPaysFromCSV(filename string) []PaysCSVRecord {
 		pr := newPaysCSVRecord(record)
 		res = append(res, pr)
 	}
+	allpays = res
 	return res
+}
+
+//GetPays for orderID
+func GetPays(orderID string) ([]PaysCSVRecord, int) {
+	var res []PaysCSVRecord
+	am := 0.0
+	for _, v := range allpays {
+		if v.Ref == orderID {
+			res = append(res, v)
+			am = am + v.Amount
+		}
+	}
+	return res, int(am)
 }

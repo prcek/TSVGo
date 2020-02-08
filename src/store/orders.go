@@ -21,11 +21,26 @@ type Order struct {
 }
 
 // GetOrderForEvent reads one Event
-func GetOrderForEvent(ID primitive.ObjectID) Order {
+/*
+func GetOrderForEvent(eventID primitive.ObjectID) Order {
 	var doc Order
-	err := orderColl.FindOne(context.Background(), bson.M{"event_id": ID, "type": "t"}).Decode(&doc)
+	err := orderColl.FindOne(context.Background(), bson.M{"event_id": eventID, "type": "t"}).Decode(&doc)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return doc
+}
+*/
+
+// GetAllOrdersForEvent returns all order for event
+func GetAllOrdersForEvent(eventID primitive.ObjectID) []Order {
+	cursor, err := orderColl.Find(context.Background(), bson.M{"event_id": eventID, "type": "t"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	var results []Order
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		log.Fatal(err)
+	}
+	return results
 }

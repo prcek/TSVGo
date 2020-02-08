@@ -17,24 +17,40 @@ import (
 	// "strconv"
 	// "strings"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func testEv(cli *mongo.Client) {
-	store.InitCollections(cli.Database("tsv"))
-	ID, err := primitive.ObjectIDFromHex("5d964fea2bfbc5000ff2a19a")
+func processEventReport(eventID string) {
+	ID, err := primitive.ObjectIDFromHex(eventID)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ev := store.GetEvent(ID)
-	fmt.Println("EV:", ev)
-	order := store.GetOrderForEvent(ID)
-	fmt.Println("OR:", order)
 
-	pays := store.ReadPaysFromCSV("input.csv")
-	fmt.Println(pays)
+	orders := store.GetAllOrdersForEvent(ID)
+	for _, order := range orders {
+		pays, paysAmount := store.GetPays(order.PublicKey)
+		if order.Status == "paid" {
+			if paysAmount != int(order.Price) {
+				fmt.Println("has diff pays amount!", order, pays)
+			}
+		} else if order.Status == "cancelled" {
+			if paysAmount != 0 {
+				fmt.Println("has pays amount!", order, pays)
+			}
+		} else {
+			fmt.Println("wrong status", order)
+		}
+		/*
+			if len(pays) == 0 {
+
+			} else {
+				if amount != int(order.Price) {
+					fmt.Println(order, amount, pays)
+				}
+			}
+		*/
+	}
 }
 
 func main() {
@@ -62,10 +78,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Ping", err)
 	}
-	var result []string
-
-	result, err = client.Database("testdb").ListCollectionNames(ctx, bson.D{})
-	fmt.Println(result)
 
 	// var sr bson.M
 	/*
@@ -79,7 +91,10 @@ func main() {
 		rr, _ := client.Database("testdb").Collection("pbla").InsertOne(context.Background(), sr2)
 		fmt.Println(rr)
 	*/
-	testEv(client)
+	// testEv(client)
+	store.InitCollections(client.Database("tsv"))
+	store.ReadPaysFromCSV("pays_csv/all.csv")
+	processEventReport("5d964fea2bfbc5000ff2a19a")
 
 	err = client.Disconnect(context.TODO())
 
