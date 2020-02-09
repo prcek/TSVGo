@@ -28,15 +28,31 @@ func processEventReport(eventID string) {
 	}
 
 	orders := store.GetAllOrdersForEvent(ID)
+	reportOrdersNo := 0
+	reportPays := 0
+	reportCash := 0
 	for _, order := range orders {
 		pays, paysAmount := store.GetPays(order.PublicKey)
+		payments, paymentsCashAmount, paymentsCardAmount := store.GetPaymentsForOrder(order.ID)
+		if paysAmount != int(paymentsCardAmount) {
+			fmt.Println("order ", order, " has pays!= paymentsCard", pays, payments)
+		}
+		anyPayment := (paysAmount != 0) || (paymentsCashAmount != 0) || (paymentsCardAmount != 0)
 		if order.Status == "paid" {
-			if paysAmount != int(order.Price) {
+			reportOrdersNo++
+			reportPays += int(paymentsCardAmount)
+			reportCash += int(paymentsCashAmount)
+			if paysAmount+int(paymentsCashAmount) != int(order.Price) {
 				fmt.Println("has diff pays amount!", order, pays)
+				fmt.Println("...", payments, ".", paymentsCashAmount, ".", paymentsCardAmount)
 			}
-		} else if order.Status == "cancelled" {
-			if paysAmount != 0 {
+		} else if (order.Status == "cancelled") || (order.Status == "declined") {
+			if anyPayment {
 				fmt.Println("has pays amount!", order, pays)
+			}
+		} else if (order.Status == "pending") || (order.Status == "reservation") {
+			if anyPayment {
+				fmt.Println("has paid amount!", order, pays, payments)
 			}
 		} else {
 			fmt.Println("wrong status", order)
@@ -51,6 +67,7 @@ func processEventReport(eventID string) {
 			}
 		*/
 	}
+	fmt.Printf("Orders %d, cash %d, card %d\n", reportOrdersNo, reportCash, reportPays)
 }
 
 func main() {
@@ -94,7 +111,8 @@ func main() {
 	// testEv(client)
 	store.InitCollections(client.Database("tsv"))
 	store.ReadPaysFromCSV("pays_csv/all.csv")
-	processEventReport("5d964fea2bfbc5000ff2a19a")
+	// processEventReport("5d964fea2bfbc5000ff2a19a")
+	processEventReport("5de80f84521551000f25aa85")
 
 	err = client.Disconnect(context.TODO())
 

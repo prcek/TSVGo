@@ -21,6 +21,7 @@ var eventColl *mongo.Collection
 func InitCollections(db *mongo.Database) {
 	eventColl = db.Collection("events")
 	orderColl = db.Collection("orders")
+	paymentsColl = db.Collection("payments")
 }
 
 // GetEvent reads one Event
