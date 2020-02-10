@@ -130,14 +130,21 @@ func ReadPaysFromCSV(filename string) []PaysCSVRecord {
 }
 
 //GetPays for orderID
-func GetPays(orderID string) ([]PaysCSVRecord, int) {
+func GetPays(orderID string) ([]PaysCSVRecord, int, int, int) {
 	var res []PaysCSVRecord
 	am := 0.0
+	amin := 0.0
+	amout := 0.0
 	for _, v := range allpays {
 		if v.Ref == orderID {
 			res = append(res, v)
 			am = am + v.Amount
+			if v.Amount > 0 {
+				amin = amin + v.Amount
+			} else {
+				amout = amout + v.Amount
+			}
 		}
 	}
-	return res, int(am)
+	return res, int(am), int(amin), int(amout)
 }

@@ -20,6 +20,22 @@ type Payment struct {
 	OrderPublicKey string             `json:"order_public_key,omitempty" bson:"order_public_key,omitempty"`
 }
 
+// PaymentsReport ...
+type PaymentsReport struct {
+	Payments                                                 []Payment
+	CashAm, CardAm, CashAmIn, CashAmOut, CardAmIn, CardAmOut int64
+}
+
+// Add - sum
+func (r *PaymentsReport) Add(a *PaymentsReport) {
+	r.CardAm += a.CardAm
+	r.CardAmIn += a.CardAmIn
+	r.CardAmOut += a.CardAmOut
+	r.CashAm += a.CashAm
+	r.CashAmIn += a.CashAmIn
+	r.CashAmOut += a.CashAmOut
+}
+
 // GetOrderForEvent reads one Event
 /*
 func GetOrderForEvent(eventID primitive.ObjectID) Order {
@@ -33,31 +49,47 @@ func GetOrderForEvent(eventID primitive.ObjectID) Order {
 */
 
 // GetPaymentsForOrder returns all order for event
-func GetPaymentsForOrder(orderID primitive.ObjectID) ([]Payment, int64, int64) {
+func GetPaymentsForOrder(orderID primitive.ObjectID) PaymentsReport {
 	cursor, err := paymentsColl.Find(context.Background(), bson.M{"order_id": orderID})
 	if err != nil {
 		log.Fatal(err)
 	}
-	var results []Payment
-	if err = cursor.All(context.TODO(), &results); err != nil {
+
+	var r PaymentsReport
+	if err = cursor.All(context.TODO(), &r.Payments); err != nil {
 		log.Fatal(err)
 	}
-	var cardAm int64 = 0
-	var cashAm int64 = 0
-	for _, p := range results {
+
+	for _, p := range r.Payments {
 		if p.Type == "cash" {
 			if p.Status == "paid" {
-				cashAm += p.Amount
+				r.CashAm += p.Amount
+				r.CashAmIn += p.Amount
+				if p.Amount < 0 {
+					log.Fatal("negative payment", p)
+				}
 			} else if p.Status == "refunded" {
-				cashAm -= p.Amount
+				r.CashAm -= p.Amount
+				r.CashAmOut -= p.Amount
+				if p.Amount < 0 {
+					log.Fatal("negative refund payment", p)
+				}
 			} else {
 				log.Fatal("unexpected payment status - ", p.Status)
 			}
 		} else if p.Type == "card" {
 			if p.Status == "paid" {
-				cardAm += p.Amount
+				r.CardAm += p.Amount
+				r.CardAmIn += p.Amount
+				if p.Amount < 0 {
+					log.Fatal("negative payment", p)
+				}
 			} else if p.Status == "refunded" {
-				cardAm -= p.Amount
+				r.CardAm -= p.Amount
+				r.CardAmOut -= p.Amount
+				if p.Amount < 0 {
+					log.Fatal("negative refund payment", p)
+				}
 			} else if p.Status == "declined" {
 
 			} else {
@@ -67,5 +99,6 @@ func GetPaymentsForOrder(orderID primitive.ObjectID) ([]Payment, int64, int64) {
 			log.Fatal("unexpected payment type - ", p.Type)
 		}
 	}
-	return results, cashAm, cardAm
+
+	return r
 }
